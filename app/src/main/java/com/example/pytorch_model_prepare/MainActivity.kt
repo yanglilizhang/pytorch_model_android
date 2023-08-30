@@ -36,8 +36,15 @@ import com.example.pytorch_model_prepare.databinding.ActivityMainBinding
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 
-
+/**
+ * https://proandroiddev.com/chaquopy-using-python-in-android-apps-dd5177c9ab6b
+ * https://chaquo.com/chaquopy/ ！！！！
+ * https://medium.com/@umerfarooq_26378/tools-to-run-python-on-android-9060663972b4
+ * https://betterstack.com/community/questions/how-to-run-python-on-android/
+ * https://ourcodeworld.com/articles/read/1656/how-to-use-chaquopy-to-run-python-code-and-obtain-its-output-using-java-in-your-android-app
+ */
 class MainActivity : AppCompatActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)

@@ -24,6 +24,7 @@ android {
         ndk {
             abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
         }
+//        https://chaquo.com/chaquopy/doc/current/android.html
         python {
             pip {
                 install "numpy"
@@ -32,7 +33,9 @@ android {
                 install "pillow"
                 install "torch"
             }
-            buildPython "C:/Users/htaed/Anaconda3/envs/myenv/python.exe"
+//            buildPython "C:/Users/htaed/Anaconda3/envs/myenv/python.exe"
+//            buildPython "D:/ocr/anaconda3/envs/uc/python.exe"
+            buildPython "D:/ocr/anaconda3/python.exe"
         }
     }
     sourceSets {
