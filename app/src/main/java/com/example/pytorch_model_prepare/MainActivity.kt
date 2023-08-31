@@ -57,20 +57,18 @@ class MainActivity : AppCompatActivity() {
             startCamera()
 
         } else {
-            ActivityCompat.requestPermissions(
-                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
+            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
         }
 
         // working code from here
 
-        if (! Python.isStarted()) {
+        if (!Python.isStarted()) {
             Python.start(AndroidPlatform(this))
         }
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(
-            baseContext, it) == PackageManager.PERMISSION_GRANTED
+        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
 
     private lateinit var viewBinding: ActivityMainBinding
@@ -118,13 +116,14 @@ class MainActivity : AppCompatActivity() {
         }
         return null
     }
+
     @RequiresApi(Build.VERSION_CODES.O)
     private fun startCamera() {
         Log.d("output", "camera started")
         try {
             val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
-        }catch (e: Exception){
+        } catch (e: Exception) {
             Log.d("output", e.toString())
         }
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
@@ -135,22 +134,21 @@ class MainActivity : AppCompatActivity() {
             // Preview
             val preview = Preview.Builder()
 //                .setTargetResolution( Size(640, 480))
-                .build()
-                .also {
+                .build().also {
                     it.setSurfaceProvider(viewBinding.viewFinder.surfaceProvider)
                 }
 
             // image analysis
 
-            val  imageAnalyzer= ImageAnalysis.Builder()
-                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+            val imageAnalyzer = ImageAnalysis.Builder()
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .setTargetResolution(Size(256, 256))
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build()
 
             val analyzer = ImageAnalysis.Analyzer { image_input ->
 
                 // load the model
+//                var module = LiteModuleLoader.load(assetFilePath("model.ptl"))
                 var module = LiteModuleLoader.load(assetFilePath("model_fixes_quantized.ptl"))
                 Log.d("output", "model loaded")
                 val planes = image_input.planes
@@ -162,15 +160,8 @@ class MainActivity : AppCompatActivity() {
                 val rowStride = planes[0].rowStride
                 val width = image_input.width
                 val height = image_input.height
-
-                val bitmap = Bitmap.createBitmap(
-                    width ,
-                    height,
-                    Bitmap.Config.ARGB_8888
-//                            Bitmap.Config.ALPHA_8
-
-                )
-
+//                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ALPHA_8)
+                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
 
                 buffer.rewind()
 //                bitmap.copyPixelsFromBuffer(buffer)
@@ -179,22 +170,28 @@ class MainActivity : AppCompatActivity() {
 
                 //center crop the image to 400x400
                 val croppedBitmap = Bitmap.createBitmap(400, 400, Bitmap.Config.ARGB_8888)
+                Log.d("output", croppedBitmap.width.toString())
+                Log.d("output", croppedBitmap.height.toString())
 
                 val xOffset = (bitmap.width - 400) / 2
                 val yOffset = (bitmap.height - 400) / 2
 
                 val canvas = Canvas(croppedBitmap)
+                //crop postion
                 canvas.drawBitmap(bitmap, Rect(xOffset, yOffset, xOffset + 400, yOffset + 400), Rect(0, 0, 400, 400), null)
 //                 resize the image to 256x256
-//                log the  size of the bitmap
-                Log.d("output", croppedBitmap.width.toString())
-                Log.d("output", croppedBitmap.height.toString())
                 val resizedBitmap = Bitmap.createScaledBitmap(croppedBitmap, 256, 256, true)
                 val normalizedBitmap = resizedBitmap.copy(Bitmap.Config.ARGB_8888, true)
-//        convert the image to a float array
+
+                val normalizedBitmap2 = findViewById<ImageView>(R.id.normalizedBitmap)
+                runOnUiThread {
+                    normalizedBitmap2.setImageBitmap(croppedBitmap)
+                }
+
+//              convert the image to a float array
                 var imgData: FloatArray = convertBitmapToFloatArray(normalizedBitmap)
 
-        Log.d("output", "image loaded")
+                Log.d("output", "image loaded")
 //        convert the image to tensor of shape [1, 3, 256, 256]
 
                 var inputTensor = Tensor.fromBlob(imgData, longArrayOf(1, 3, 256, 256))
@@ -207,8 +204,6 @@ class MainActivity : AppCompatActivity() {
                 Log.d("output", out_3d.toString())
 //        convert the tensor to array
                 val out_3d_array = out_3d.dataAsFloatArray
-
-
 
 
                 val py = Python.getInstance()
@@ -224,20 +219,16 @@ class MainActivity : AppCompatActivity() {
                     val bmp = BitmapFactory.decodeByteArray(data, 0, data.size)
                     val image_to_view = findViewById<ImageView>(R.id.imageView)
                     image_to_view.setImageBitmap(bmp)
-
-                }
-                catch (e: Exception){
+                } catch (e: Exception) {
                     Log.d("output", e.toString())
                 }
                 val data: ByteArray = Base64.getDecoder().decode(str)
                 val bmp = BitmapFactory.decodeByteArray(data, 0, data.size)
                 val image_to_view = findViewById<ImageView>(R.id.imageView)
-
                 image_to_view.setImageBitmap(bmp)
 //                image_input.close()
             }
             imageAnalyzer.setAnalyzer(Executors.newSingleThreadExecutor(), analyzer)
-
 
 
             // Select back camera as a default
@@ -248,29 +239,24 @@ class MainActivity : AppCompatActivity() {
                 cameraProvider.unbindAll()
 
                 // Bind use cases to camera
-                cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageAnalyzer)
-                        Log.d("output", "life cycle bound")
+                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
+                Log.d("output", "life cycle bound")
 
-
-            } catch(exc: Exception) {
+            } catch (exc: Exception) {
                 Log.d("hello", "Use case binding failed", exc)
             }
 
         }, ContextCompat.getMainExecutor(this))
     }
+
     companion object {
         private const val TAG = "CameraXApp"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private const val REQUEST_CODE_PERMISSIONS = 10
-        private val REQUIRED_PERMISSIONS =
-            mutableListOf (
-                Manifest.permission.CAMERA,
-                Manifest.permission.RECORD_AUDIO
-            ).apply {
-                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-                    add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                }
-            }.toTypedArray()
+        private val REQUIRED_PERMISSIONS = mutableListOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO).apply {
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+        }.toTypedArray()
     }
 }
